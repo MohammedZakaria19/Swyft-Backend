@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  admin
+  academy_owner
+  coach
+  parent
+  swimmer
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(coach)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ownedAcademies Academy[]
+  coachMemberships CoachMembership[]
+  groups           Group[]
+}
+
+model Academy {
+  id        Int      @id @default(autoincrement())
+  name      String
+  address   String?
+  ownerId   Int
+  owner     User     @relation(fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  coachMemberships CoachMembership[]
+  groups           Group[]
+
+  @@index([ownerId])
+}
+
+enum MembershipStatus {
+  PENDING
+  ACTIVE
+  DECLINED
+}
+
+model CoachMembership {
+  id        Int              @id @default(autoincrement())
+  coachId   Int
+  academyId Int
+  status    MembershipStatus @default(PENDING)
+  coach     User             @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  academy   Academy          @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([coachId, academyId])
+  @@index([academyId])
+}
+
+model Group {
+  id        Int      @id @default(autoincrement())
+  name      String
+  coachId   Int
+  academyId Int?
+  coach     User     @relation(fields: [coachId], references: [id])
+  academy   Academy? @relation(fields: [academyId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([coachId])
+  @@index([academyId])
+}
